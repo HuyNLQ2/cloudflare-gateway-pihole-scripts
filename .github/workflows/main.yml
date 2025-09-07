@@ -68,12 +68,20 @@ jobs:
           curl "${{ env.PING_URL }}"
         env:
           PING_URL: ${{ secrets.PING_URL }}
-
-  keepalive:
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: gautamkrishnar/keepalive-workflow@v2
+keepalive:
+  runs-on: ubuntu-latest
+  # Cần quyền ghi để push commit rỗng
+  permissions:
+    contents: write
+  # Chỉ chạy khi theo lịch hoặc bạn bấm tay
+  if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Keep repo alive (empty commit)
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git commit --allow-empty -m "chore(ci): keepalive $(date -u +'%Y-%m-%dT%H:%M:%SZ')" || echo "No changes"
+        git push
